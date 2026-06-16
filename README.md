@@ -1,5 +1,9 @@
 # mcpguard
 
+[![npm version](https://img.shields.io/npm/v/mcpguard.svg)](https://www.npmjs.com/package/mcpguard)
+[![CI](https://github.com/nikolas-sapa/mcpguard/actions/workflows/ci.yml/badge.svg)](https://github.com/nikolas-sapa/mcpguard/actions/workflows/ci.yml)
+[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](./LICENSE)
+
 **Security scanner for MCP servers.** Point it at any [Model Context Protocol](https://modelcontextprotocol.io) server and get a severity-ranked report of the risks your agents inherit by connecting to it.
 
 ```bash
