@@ -72,7 +72,7 @@ export function renderTerminal(r: ScanReport, color: boolean): string {
 
   const lines: string[] = [];
   lines.push("");
-  lines.push(b(`  mcpguard — scan report`));
+  lines.push(b(`  toolfence — scan report`));
   lines.push(`  target:  ${r.target}`);
   lines.push(
     `  server:  ${r.serverName ?? "unknown"}${r.serverVersion ? ` v${r.serverVersion}` : ""} (${r.transport})`,
@@ -109,7 +109,7 @@ export function renderJsonSafe(r: ScanReport): string {
 
 export function renderMarkdown(r: ScanReport): string {
   const lines: string[] = [];
-  lines.push(`# mcpguard scan report`);
+  lines.push(`# toolfence scan report`);
   lines.push("");
   lines.push(`- **Target:** \`${r.target}\``);
   lines.push(

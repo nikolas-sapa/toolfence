@@ -1,4 +1,4 @@
-// Core types for mcpguard.
+// Core types for toolfence.
 
 export type Severity = "critical" | "high" | "medium" | "low" | "info";
 

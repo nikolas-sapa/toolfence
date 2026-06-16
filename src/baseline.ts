@@ -1,5 +1,5 @@
 // Baseline persistence for drift detection. Stored per-target under
-// ~/.mcpguard/baselines/<hash>.json so re-running the same target compares
+// ~/.toolfence/baselines/<hash>.json so re-running the same target compares
 // against the last seen tool fingerprints.
 
 import { createHash } from "node:crypto";
@@ -10,7 +10,7 @@ import type { Baseline, ToolInfo } from "./types.js";
 import { fingerprint } from "./checks/index.js";
 
 function baselineDir(): string {
-  return join(homedir(), ".mcpguard", "baselines");
+  return join(homedir(), ".toolfence", "baselines");
 }
 
 function baselinePath(target: string): string {

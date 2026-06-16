@@ -1,4 +1,4 @@
-// The mcpguard v0.1 check suite. Each check is pure over ScanContext and
+// The toolfence v0.1 check suite. Each check is pure over ScanContext and
 // returns zero or more findings. Keep checks independent and side-effect free
 // (baseline persistence is handled by the runner, not the checks).
 

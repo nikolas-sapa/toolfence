@@ -3,3 +3,6 @@ dist/
 *.log
 .DS_Store
 .mcpguard/
+
+# held until gh has 'workflow' scope
+.github/workflows/ci.yml

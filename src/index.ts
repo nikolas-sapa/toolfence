@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// mcpguard — security scanner for MCP servers.
+// toolfence — security scanner for MCP servers.
 
 import { writeFile } from "node:fs/promises";
 import { connect } from "./connect.js";
@@ -74,12 +74,12 @@ function parseArgs(argv: string[]): Args {
 }
 
 const HELP = `
-mcpguard — security scanner for MCP servers
+toolfence — security scanner for MCP servers
 
 USAGE
-  mcpguard <url>                 Scan a remote MCP server (Streamable HTTP / SSE)
-  mcpguard --stdio <cmd...>      Scan a local stdio MCP server
-  npx mcpguard https://example.com/mcp
+  toolfence <url>                 Scan a remote MCP server (Streamable HTTP / SSE)
+  toolfence --stdio <cmd...>      Scan a local stdio MCP server
+  npx toolfence https://example.com/mcp
 
 OPTIONS
   --bearer <token>   Bearer token for authenticated servers
@@ -115,7 +115,7 @@ async function main(): Promise<number> {
     });
   } catch (err) {
     process.stderr.write(
-      `mcpguard: failed to connect to "${args.target}": ${(err as Error).message}\n`,
+      `toolfence: failed to connect to "${args.target}": ${(err as Error).message}\n`,
     );
     return 2;
   }
@@ -167,7 +167,7 @@ async function main(): Promise<number> {
 
     if (args.out) {
       await writeFile(args.out, rendered);
-      process.stdout.write(`mcpguard: report written to ${args.out}\n`);
+      process.stdout.write(`toolfence: report written to ${args.out}\n`);
     } else {
       process.stdout.write(rendered + "\n");
     }
@@ -182,6 +182,6 @@ async function main(): Promise<number> {
 main()
   .then((code) => process.exit(code))
   .catch((err) => {
-    process.stderr.write(`mcpguard: fatal: ${err?.stack ?? err}\n`);
+    process.stderr.write(`toolfence: fatal: ${err?.stack ?? err}\n`);
     process.exit(2);
   });

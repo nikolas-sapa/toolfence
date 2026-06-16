@@ -203,6 +203,6 @@ test("report rendering + worstSeverity + markdown/json do not throw", () => {
   ];
   const r = buildReport("t", "http", 2, findings, "srv", "1.0");
   assert.equal(worstSeverity(r), "critical");
-  assert.match(renderMarkdown(r), /mcpguard scan report/);
+  assert.match(renderMarkdown(r), /toolfence scan report/);
   assert.doesNotThrow(() => JSON.parse(renderJsonSafe(r)));
 });

@@ -21,7 +21,7 @@ export interface ConnectOptions {
   stdio?: boolean;
 }
 
-const CLIENT_INFO = { name: "mcpguard", version: "0.2.0" };
+const CLIENT_INFO = { name: "toolfence", version: "0.2.0" };
 
 function isUrl(target: string): boolean {
   return /^https?:\/\//i.test(target);

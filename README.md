@@ -1,17 +1,17 @@
-# mcpguard
+# toolfence
 
-[![npm version](https://img.shields.io/npm/v/mcpguard.svg)](https://www.npmjs.com/package/mcpguard)
-[![CI](https://github.com/nikolas-sapa/mcpguard/actions/workflows/ci.yml/badge.svg)](https://github.com/nikolas-sapa/mcpguard/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/toolfence.svg)](https://www.npmjs.com/package/toolfence)
+[![CI](https://github.com/nikolas-sapa/toolfence/actions/workflows/ci.yml/badge.svg)](https://github.com/nikolas-sapa/toolfence/actions/workflows/ci.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](./LICENSE)
 
 **Security scanner for MCP servers.** Point it at any [Model Context Protocol](https://modelcontextprotocol.io) server and get a severity-ranked report of the risks your agents inherit by connecting to it.
 
 ```bash
-npx mcpguard https://your-server.example.com/mcp
+npx toolfence https://your-server.example.com/mcp
 ```
 
 ```
-  mcpguard — scan report
+  toolfence — scan report
   target:  https://your-server.example.com/mcp
   server:  acme-tools v1.4.0 (http)
   tools:   22
@@ -41,38 +41,38 @@ OAuth authenticated your agents. It didn't make them **safe**. The MCP spec sett
 - **Context-cost runaway** — a bloated tool catalog that's prepended to every agent turn.
 - **Over-broad capability** — tools that touch the filesystem, execute code, or reach the network with no scoping.
 
-`mcpguard` is the open-source scanner that surfaces these before you connect an agent to a server.
+`toolfence` is the open-source scanner that surfaces these before you connect an agent to a server.
 
 ## Install
 
 Run without installing:
 
 ```bash
-npx mcpguard <url>
+npx toolfence <url>
 ```
 
 Or install globally:
 
 ```bash
-npm install -g mcpguard
-mcpguard <url>
+npm install -g toolfence
+toolfence <url>
 ```
 
 ## Usage
 
 ```bash
 # Remote server (Streamable HTTP, falls back to SSE)
-mcpguard https://example.com/mcp
+toolfence https://example.com/mcp
 
 # Authenticated server
-mcpguard https://example.com/mcp --bearer "$TOKEN"
+toolfence https://example.com/mcp --bearer "$TOKEN"
 
 # Local stdio server (everything after --stdio is the command)
-mcpguard --stdio npx -y @modelcontextprotocol/server-everything
+toolfence --stdio npx -y @modelcontextprotocol/server-everything
 
 # Machine-readable output for CI / dashboards
-mcpguard https://example.com/mcp --json
-mcpguard https://example.com/mcp --markdown -o report.md
+toolfence https://example.com/mcp --json
+toolfence https://example.com/mcp --markdown -o report.md
 ```
 
 ### Options
@@ -116,7 +116,7 @@ The [known-bad signature set](./src/signatures.ts) is community-extensible — s
 ### Drift detection
 
 The first scan of a target records a fingerprint of every tool definition under
-`~/.mcpguard/baselines/`. Subsequent scans of the same target compare against it
+`~/.toolfence/baselines/`. Subsequent scans of the same target compare against it
 and flag any tool whose definition changed, appeared, or disappeared — the core
 signal for catching a server that turns malicious *after* you trusted it. Run it
 in CI to fail the build on unexpected drift.

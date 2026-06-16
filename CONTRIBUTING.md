@@ -1,4 +1,4 @@
-# Contributing to mcpguard
+# Contributing to toolfence
 
 The most valuable contribution is a **new known-bad signature**: a pattern seen
 in a real malicious or compromised MCP server. The signature set is what makes
