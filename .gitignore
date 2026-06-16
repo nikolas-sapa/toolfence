@@ -5,7 +5,4 @@ dist/
 .mcpguard/
 
 # held until gh has 'workflow' scope
-.github/workflows/ci.yml
 
-# held until gh active account has 'workflow' scope
-.github/workflows/ci.yml
