@@ -91,18 +91,23 @@ mcpguard https://example.com/mcp --markdown -o report.md
 | `1` | At least one high or critical finding |
 | `2` | Scan could not run (connection / usage error) |
 
-## What it checks (v0.1)
+## What it checks
 
 | Check | What it catches |
 |-------|-----------------|
 | **Authentication posture** | HTTP server that lists tools with no credentials |
 | **Transport security** | Plaintext HTTP for non-local endpoints |
 | **Prompt-injection signatures** | Adversarial instructions embedded in tool definitions |
+| **Known-bad signatures** | Documented MCP abuse patterns (secret-file reads, rug-pulls, cross-tool shadowing, exfiltration-to-external, obfuscated payloads) |
 | **Tool integrity / drift** | Tool definitions that changed since the last scan |
 | **Context cost** | Tool catalogs large enough to inflate every agent turn |
 | **Rate-limit posture** | No server-side ceiling on call volume |
 | **Naming hygiene** | Duplicate or collision-prone generic tool names |
 | **Sensitive capability** | Tools that reach the filesystem, execute code, or touch the network |
+| **Schema strength** | Missing, untyped, or unsealed input schemas |
+| **Safety annotations** | Tools lacking `readOnlyHint` / `destructiveHint` so writes can't be gated |
+
+The [known-bad signature set](./src/signatures.ts) is community-extensible — see [CONTRIBUTING](./CONTRIBUTING.md).
 
 ### Drift detection
 
