@@ -10,11 +10,21 @@ export const SEVERITY_ORDER: Severity[] = [
   "info",
 ];
 
+// Behavioral hints a server may attach to a tool (MCP `annotations`).
+export interface ToolAnnotations {
+  title?: string;
+  readOnlyHint?: boolean;
+  destructiveHint?: boolean;
+  idempotentHint?: boolean;
+  openWorldHint?: boolean;
+}
+
 // A single MCP tool as reported by the server.
 export interface ToolInfo {
   name: string;
   description?: string;
   inputSchema?: unknown;
+  annotations?: ToolAnnotations;
 }
 
 // Transport/connection facts gathered while connecting, shared with checks.

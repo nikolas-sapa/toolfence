@@ -5,6 +5,7 @@
 import { createHash } from "node:crypto";
 import { encode } from "gpt-tokenizer";
 import type { Check, Finding, ScanContext, ToolInfo } from "../types.js";
+import { matchSignatures } from "../signatures.js";
 
 function toolText(t: ToolInfo): string {
   return [t.name, t.description ?? "", JSON.stringify(t.inputSchema ?? {})].join(
@@ -334,13 +335,128 @@ const sensitiveScope: Check = {
   },
 };
 
+// ── 9. Known-bad signature DB ────────────────────────────────────────────────
+const knownBadSignatures: Check = {
+  id: "known-bad-signatures",
+  title: "Known-bad signature match",
+  run(ctx) {
+    const f: Finding[] = [];
+    for (const t of ctx.tools) {
+      const text = `${t.name}\n${t.description ?? ""}`;
+      for (const sig of matchSignatures(text)) {
+        f.push({
+          checkId: this.id,
+          severity: sig.severity,
+          title: `Matched known-bad signature: ${sig.id}`,
+          detail: `Tool "${t.name}" — ${sig.label}.${sig.reference ? ` (ref: ${sig.reference})` : ""}`,
+          tool: t.name,
+          remediation:
+            "Treat this server as untrusted until manually reviewed. Report confirmed-malicious servers so the signature set improves.",
+        });
+      }
+    }
+    return f;
+  },
+};
+
+// ── 10. Input-schema validation strength ─────────────────────────────────────
+function isObjectSchema(s: unknown): s is Record<string, unknown> {
+  return typeof s === "object" && s !== null;
+}
+
+const schemaStrength: Check = {
+  id: "schema-strength",
+  title: "Input-schema validation strength",
+  run(ctx) {
+    const f: Finding[] = [];
+    for (const t of ctx.tools) {
+      const s = t.inputSchema;
+      if (!isObjectSchema(s)) {
+        f.push({
+          checkId: this.id,
+          severity: "medium",
+          title: "Tool has no input schema",
+          detail: `Tool "${t.name}" exposes no input schema. Arguments are unvalidated — an over-permissive surface for injection and malformed input.`,
+          tool: t.name,
+          remediation: "Publish a typed JSON Schema with explicit properties.",
+        });
+        continue;
+      }
+      const props = (s as { properties?: Record<string, unknown> }).properties;
+      const hasProps = isObjectSchema(props) && Object.keys(props).length > 0;
+      const additional = (s as { additionalProperties?: unknown })
+        .additionalProperties;
+      const sealed = additional === false;
+
+      if (!hasProps) {
+        f.push({
+          checkId: this.id,
+          severity: "low",
+          title: "Untyped / propertyless input schema",
+          detail: `Tool "${t.name}" declares an object schema with no typed properties, so any input shape is accepted.`,
+          tool: t.name,
+          remediation: "Define explicit, typed properties for every argument.",
+        });
+      } else if (!sealed) {
+        f.push({
+          checkId: this.id,
+          severity: "info",
+          title: "Schema accepts additional properties",
+          detail: `Tool "${t.name}" does not set additionalProperties:false, so callers may smuggle undeclared fields.`,
+          tool: t.name,
+          remediation: "Set additionalProperties:false to reject unknown fields.",
+        });
+      }
+    }
+    return f;
+  },
+};
+
+// ── 11. Tool safety annotations ──────────────────────────────────────────────
+const toolAnnotations: Check = {
+  id: "tool-annotations",
+  title: "Tool safety annotations",
+  run(ctx) {
+    const f: Finding[] = [];
+    for (const t of ctx.tools) {
+      const a = t.annotations;
+      const hasSafetyHint =
+        a &&
+        (a.readOnlyHint !== undefined || a.destructiveHint !== undefined);
+      if (!hasSafetyHint) {
+        f.push({
+          checkId: this.id,
+          severity: "low",
+          title: "No read-only / destructive annotation",
+          detail: `Tool "${t.name}" provides no readOnlyHint or destructiveHint. A gateway or agent can't make a safe allow/deny decision without knowing whether the call mutates state.`,
+          tool: t.name,
+          remediation:
+            "Annotate tools with readOnlyHint / destructiveHint so callers can gate writes.",
+        });
+      } else if (a?.destructiveHint === true) {
+        f.push({
+          checkId: this.id,
+          severity: "info",
+          title: "Tool self-declares destructive",
+          detail: `Tool "${t.name}" is annotated destructiveHint:true — ensure it is allow-listed and gated behind confirmation.`,
+          tool: t.name,
+        });
+      }
+    }
+    return f;
+  },
+};
+
 export const CHECKS: Check[] = [
   authPosture,
   transportTls,
   promptInjection,
+  knownBadSignatures,
   toolIntegrity,
   contextCost,
   rateLimit,
   namingHygiene,
   sensitiveScope,
+  schemaStrength,
+  toolAnnotations,
 ];

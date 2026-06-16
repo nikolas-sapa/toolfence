@@ -21,7 +21,7 @@ export interface ConnectOptions {
   stdio?: boolean;
 }
 
-const CLIENT_INFO = { name: "mcpguard", version: "0.1.0" };
+const CLIENT_INFO = { name: "mcpguard", version: "0.2.0" };
 
 function isUrl(target: string): boolean {
   return /^https?:\/\//i.test(target);
@@ -148,6 +148,7 @@ async function listTools(client: Client): Promise<ToolInfo[]> {
       name: t.name,
       description: t.description,
       inputSchema: t.inputSchema,
+      annotations: t.annotations as ToolInfo["annotations"],
     }));
   } catch {
     // Server may not expose tools; treat as empty catalog.
