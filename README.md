@@ -95,7 +95,7 @@ toolfence https://example.com/mcp --markdown -o report.md
 | `1` | At least one high or critical finding |
 | `2` | Scan could not run (connection / usage error) |
 
-## What it checks
+## What it checks (12)
 
 | Check | What it catches |
 |-------|-----------------|
@@ -110,6 +110,7 @@ toolfence https://example.com/mcp --markdown -o report.md
 | **Sensitive capability** | Tools that reach the filesystem, execute code, or touch the network |
 | **Schema strength** | Missing, untyped, or unsealed input schemas |
 | **Safety annotations** | Tools lacking `readOnlyHint` / `destructiveHint` so writes can't be gated |
+| **Unicode hygiene** | Zero-width / bidi / homoglyph characters used to hide instructions or spoof trusted tools |
 
 The [known-bad signature set](./src/signatures.ts) is community-extensible — see [CONTRIBUTING](./CONTRIBUTING.md).
 

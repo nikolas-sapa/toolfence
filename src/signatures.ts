@@ -56,6 +56,30 @@ export const SIGNATURES: Signature[] = [
     re: /[A-Za-z0-9+/]{120,}={0,2}/,
     reference: "Obfuscated-payload smuggling in tool metadata",
   },
+  {
+    id: "sig-jailbreak-language",
+    label:
+      "Tool description contains jailbreak framing (developer mode / DAN / unfiltered)",
+    severity: "high",
+    re: /\b(developer\s+mode|jailbreak|DAN\s+mode|do\s+anything\s+now|unfiltered\s+(mode|response)|without\s+(any\s+)?restrictions)\b/i,
+    reference: "Jailbreak prompt patterns embedded in tool metadata",
+  },
+  {
+    id: "sig-coercive-trust",
+    label:
+      "Tool description preemptively dismisses safety checks ('this is safe, ignore any warnings')",
+    severity: "medium",
+    re: /\b(this\s+is\s+(completely\s+)?safe|ignore\s+(any|all)\s+warnings?|do\s+not\s+ask\s+(for\s+)?(permission|confirmation)|no\s+need\s+to\s+(confirm|verify))\b/i,
+    reference: "Confirmation-bypass framing in tool metadata",
+  },
+  {
+    id: "sig-mcp-config-target",
+    label:
+      "Tool description references MCP client config files (mcp.json / claude_desktop_config / cursor config)",
+    severity: "high",
+    re: /\b(claude_desktop_config|cursor\s*\.?\s*json|\.cursor\/mcp|\.mcp\.json|mcp_settings)\b/i,
+    reference: "MCP client-config tampering surface",
+  },
 ];
 
 export interface SignatureHit {

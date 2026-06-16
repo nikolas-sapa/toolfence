@@ -447,10 +447,65 @@ const toolAnnotations: Check = {
   },
 };
 
+// ── 12. Unicode hygiene ──────────────────────────────────────────────────────
+// Invisible and direction-control characters in tool names/descriptions are a
+// real injection vector: hidden instructions the human reviewer never sees but
+// the model does. Also flags non-ASCII letters in tool *names* (homoglyph
+// spoofing of a trusted tool, e.g. Cyrillic "а" in "sеarch").
+// Zero-width space, ZWNJ, ZWJ, word joiner, BOM/zero-width no-break space.
+const ZERO_WIDTH = /[\u200B-\u200D\u2060\uFEFF]/;
+// Bidi embedding/override + isolate controls (Trojan Source).
+const BIDI_CONTROL = /[\u202A-\u202E\u2066-\u2069]/;
+const NON_ASCII_LETTER = /[^\x00-\x7F]/;
+
+const unicodeHygiene: Check = {
+  id: "unicode-hygiene",
+  title: "Unicode hygiene",
+  run(ctx) {
+    const f: Finding[] = [];
+    for (const t of ctx.tools) {
+      const blob = `${t.name}\n${t.description ?? ""}`;
+      if (ZERO_WIDTH.test(blob)) {
+        f.push({
+          checkId: this.id,
+          severity: "critical",
+          title: "Zero-width characters in tool definition",
+          detail: `Tool "${t.name}" contains zero-width/invisible characters. These can hide instructions from a human reviewer while still reaching the model — a covert tool-poisoning channel.`,
+          tool: t.name,
+          remediation: "Strip non-printing characters from tool metadata.",
+        });
+      }
+      if (BIDI_CONTROL.test(blob)) {
+        f.push({
+          checkId: this.id,
+          severity: "high",
+          title: "Bidirectional control characters",
+          detail: `Tool "${t.name}" contains Unicode bidi control characters, which can visually reorder text so the rendered description differs from what the model reads ("Trojan Source").`,
+          tool: t.name,
+          remediation: "Remove bidi override characters from tool metadata.",
+        });
+      }
+      // Homoglyph spoofing matters most in the *name* (impersonating a tool).
+      if (NON_ASCII_LETTER.test(t.name)) {
+        f.push({
+          checkId: this.id,
+          severity: "medium",
+          title: "Non-ASCII characters in tool name",
+          detail: `Tool name "${t.name}" contains non-ASCII characters, which can impersonate a trusted tool via lookalike glyphs (e.g. Cyrillic vs Latin letters).`,
+          tool: t.name,
+          remediation: "Restrict tool names to ASCII.",
+        });
+      }
+    }
+    return f;
+  },
+};
+
 export const CHECKS: Check[] = [
   authPosture,
   transportTls,
   promptInjection,
+  unicodeHygiene,
   knownBadSignatures,
   toolIntegrity,
   contextCost,
