@@ -1,8 +1,10 @@
 # toolfence
 
-[![npm version](https://img.shields.io/npm/v/toolfence.svg)](https://www.npmjs.com/package/toolfence)
+[![npm version](https://img.shields.io/npm/v/toolfence.svg?style=flat-square&color=0B0B0D&labelColor=0B0B0D)](https://www.npmjs.com/package/toolfence)
 [![CI](https://github.com/nikolas-sapa/toolfence/actions/workflows/ci.yml/badge.svg)](https://github.com/nikolas-sapa/toolfence/actions/workflows/ci.yml)
-[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](./LICENSE)
+[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-0B0B0D?style=flat-square&labelColor=0B0B0D)](./LICENSE)
+[![Node](https://img.shields.io/badge/node-%3E%3D20-0B0B0D?style=flat-square&labelColor=0B0B0D)](./package.json)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-0B0B0D?style=flat-square&labelColor=0B0B0D)](./CONTRIBUTING.md)
 
 **Security scanner for MCP servers.** Point it at any [Model Context Protocol](https://modelcontextprotocol.io) server and get a severity-ranked report of the risks your agents inherit by connecting to it.
 
@@ -130,6 +132,17 @@ enforces these properties at runtime — output sanitization, per-call scope
 reduction, behavioral guardrails (rate/cost ceilings), capability-based
 sub-agent delegation, and replayable audit. The scanner tells you what's wrong;
 the gateway stops it in production.
+
+## Contributing
+
+The most valuable contribution is a new known-bad signature — a documented
+MCP abuse pattern the scanner should catch. See [CONTRIBUTING.md](./CONTRIBUTING.md)
+for the signature format, dev loop, and PR expectations.
+
+## Security
+
+Found a vulnerability in toolfence itself? Don't file a public issue — see
+[SECURITY.md](./SECURITY.md) for how to report it.
 
 ## License
 
