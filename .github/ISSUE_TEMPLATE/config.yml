@@ -1,8 +1,11 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Report a security vulnerability
-    url: https://github.com/nikolas-sapa/toolfence/security/policy
-    about: Do not file vulnerabilities as public issues — see SECURITY.md.
+  - name: Report a security vulnerability in toolfence
+    url: https://github.com/nikolas-sapa/toolfence/security/advisories/new
+    about: Do not file vulnerabilities as public issues. Report privately — see SECURITY.md.
   - name: Report a malicious MCP server observed in the wild
+    url: https://github.com/nikolas-sapa/toolfence/security/advisories/new
+    about: Report privately, not as a public issue. Naming an unpatched third-party server in public exposes its users before its maintainer can fix it.
+  - name: Propose a new check or signature
     url: https://github.com/nikolas-sapa/toolfence/issues/new?labels=signature-candidate
-    about: Include the server identity, the offending tool definition, and the abuse it enables.
+    about: For detection ideas that do not name a specific unpatched server.
