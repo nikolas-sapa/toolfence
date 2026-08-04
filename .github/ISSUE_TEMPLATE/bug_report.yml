@@ -1,0 +1,55 @@
+name: Bug report
+description: Something in toolfence itself is broken (crash, wrong exit code, bad output).
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Found a security vulnerability instead? Don't file it here — see [SECURITY.md](../../SECURITY.md).
+
+  - type: input
+    id: version
+    attributes:
+      label: toolfence version
+      placeholder: "0.3.0 (npx toolfence --help prints it, or check package.json)"
+    validations:
+      required: true
+
+  - type: input
+    id: node-version
+    attributes:
+      label: Node.js version
+      placeholder: "node --version"
+    validations:
+      required: true
+
+  - type: textarea
+    id: command
+    attributes:
+      label: Command run
+      description: The exact toolfence invocation, redacting tokens/URLs if needed.
+      render: bash
+      placeholder: "toolfence https://example.com/mcp --json"
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include exit code, stack trace, or malformed output if relevant.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: A minimal target server or tool definition that triggers the bug, if possible.

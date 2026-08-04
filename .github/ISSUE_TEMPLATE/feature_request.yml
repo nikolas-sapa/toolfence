@@ -1,0 +1,38 @@
+name: Feature request / new check proposal
+description: Propose a new check, a new known-bad signature, or another improvement.
+labels: ["enhancement"]
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of request is this?
+      options:
+        - New known-bad signature (documented abuse pattern)
+        - New check (a new category of finding)
+        - CLI / output improvement
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: pattern
+    attributes:
+      label: If this is a signature or check — describe the abuse pattern
+      description: |
+        What does a malicious/risky server do here, and how would toolfence detect it?
+        Link to a disclosure, writeup, or real-world incident if you have one — this
+        becomes the `reference` field. See CONTRIBUTING.md for the signature format.
+      placeholder: "e.g. a tool description containing hidden base64-encoded instructions"
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What should toolfence do, and why isn't it covered by an existing check?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
