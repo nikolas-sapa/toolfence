@@ -14,7 +14,10 @@ function toolText(t: ToolInfo): string {
 }
 
 export function fingerprint(t: ToolInfo): string {
-  return createHash("sha256").update(toolText(t)).digest("hex").slice(0, 16);
+  const definition = t.annotations === undefined
+    ? toolText(t)
+    : `${toolText(t)}\n${JSON.stringify(t.annotations)}`;
+  return createHash("sha256").update(definition).digest("hex").slice(0, 16);
 }
 
 // ── 1. Auth posture ─────────────────────────────────────────────────────────
@@ -39,9 +42,9 @@ const authPosture: Check = {
       f.push({
         checkId: this.id,
         severity: "high",
-        title: "No authentication required",
+        title: "No credentials required for tool discovery",
         detail:
-          "The server accepted an MCP session and listed tools without any credentials. Anyone who can reach this URL can invoke its tools.",
+          "The server accepted an MCP session and listed tools without any credentials. Tool execution was not tested; listing access does not prove anonymous execution access.",
         remediation:
           "Require OAuth 2.1 (per the 2025 MCP spec for HTTP transports) or at minimum a bearer token. Disable anonymous Dynamic Client Registration.",
       });
@@ -70,7 +73,7 @@ const toolIntegrity: Check = {
     const now = new Map(ctx.tools.map((t) => [t.name, fingerprint(t)]));
 
     for (const [name, hash] of now) {
-      if (!(name in prev)) {
+      if (!Object.hasOwn(prev, name)) {
         f.push({
           checkId: this.id,
           severity: "medium",
@@ -83,7 +86,7 @@ const toolIntegrity: Check = {
           checkId: this.id,
           severity: "high",
           title: "Tool definition changed since baseline",
-          detail: `Tool "${name}" has a different fingerprint than the baseline (description or input schema changed). Silent tool redefinition is a poisoning vector.`,
+          detail: `Tool "${name}" has a different fingerprint than the baseline (description, input schema or safety annotations changed). Silent tool redefinition is a poisoning vector.`,
           tool: name,
           remediation:
             "Re-review the tool definition. Pin trusted server versions and alert on drift in CI.",
@@ -163,13 +166,7 @@ const contextCost: Check = {
         inputSchema: t.inputSchema,
       })),
     );
-    let tokens: number;
-    try {
-      tokens = encode(catalog).length;
-    } catch {
-      // Fallback heuristic if tokenizer chokes on the payload.
-      tokens = Math.ceil(catalog.length / 4);
-    }
+    const tokens = encode(catalog, { disallowedSpecial: new Set() }).length;
     const sev =
       tokens >= COST_HIGH ? "high" : tokens >= COST_WARN ? "medium" : "info";
     if (sev !== "info") {
@@ -216,7 +213,7 @@ const rateLimit: Check = {
         severity: "low",
         title: "No rate-limit headers advertised",
         detail:
-          "The endpoint exposed no standard rate-limit headers. An agent in a loop can hammer this server with no server-side ceiling, driving runaway cost.",
+          "The endpoint exposed no standard rate-limit headers. Server-side enforcement was not tested; absent headers do not establish absent call-volume limits.",
         remediation:
           "Advertise RateLimit headers (RFC 9239 draft) and enforce per-client quotas. Govern call volume at the gateway layer.",
       });
@@ -388,7 +385,7 @@ const schemaStrength: Check = {
         .additionalProperties;
       const sealed = additional === false;
 
-      if (!hasProps) {
+      if (!hasProps && !sealed) {
         f.push({
           checkId: this.id,
           severity: "low",

@@ -65,6 +65,17 @@ export function worstSeverity(r: ScanReport): Severity | null {
   return null;
 }
 
+export function terminalText(value: string): string {
+  return value.replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2060\u2066-\u2069\ufeff]/g,
+    char => `\\u${char.charCodeAt(0).toString(16).padStart(4, "0")}`);
+}
+
+function markdownText(value: string): string {
+  return terminalText(value)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/[\\`*_{}[\]()#+.!|~-]/g, "\\$&");
+}
+
 export function renderTerminal(r: ScanReport, color: boolean): string {
   const c = (s: Severity, text: string) =>
     color ? `${COLOR[s]}${text}${RESET}` : text;
@@ -73,9 +84,9 @@ export function renderTerminal(r: ScanReport, color: boolean): string {
   const lines: string[] = [];
   lines.push("");
   lines.push(b(`  toolfence — scan report`));
-  lines.push(`  target:  ${r.target}`);
+  lines.push(`  target:  ${terminalText(r.target)}`);
   lines.push(
-    `  server:  ${r.serverName ?? "unknown"}${r.serverVersion ? ` v${r.serverVersion}` : ""} (${r.transport})`,
+    `  server:  ${terminalText(r.serverName ?? "unknown")}${r.serverVersion ? ` v${terminalText(r.serverVersion)}` : ""} (${r.transport})`,
   );
   lines.push(`  tools:   ${r.toolCount}`);
   lines.push("");
@@ -88,10 +99,10 @@ export function renderTerminal(r: ScanReport, color: boolean): string {
 
   for (const f of r.findings) {
     lines.push(
-      `  ${c(f.severity, LABEL[f.severity])}  ${b(f.title)}${f.tool ? `  ${c("info", `[${f.tool}]`)}` : ""}`,
+      `  ${c(f.severity, LABEL[f.severity])}  ${b(terminalText(f.title))}${f.tool ? `  ${c("info", `[${terminalText(f.tool)}]`)}` : ""}`,
     );
-    lines.push(`        ${f.detail}`);
-    if (f.remediation) lines.push(`        ${c("info", "→ " + f.remediation)}`);
+    lines.push(`        ${terminalText(f.detail)}`);
+    if (f.remediation) lines.push(`        ${c("info", "→ " + terminalText(f.remediation))}`);
     lines.push("");
   }
 
@@ -111,11 +122,11 @@ export function renderMarkdown(r: ScanReport): string {
   const lines: string[] = [];
   lines.push(`# toolfence scan report`);
   lines.push("");
-  lines.push(`- **Target:** \`${r.target}\``);
+  lines.push(`- **Target:** ${markdownText(r.target)}`);
   lines.push(
-    `- **Server:** ${r.serverName ?? "unknown"}${r.serverVersion ? ` v${r.serverVersion}` : ""}`,
+    `- **Server:** ${markdownText(r.serverName ?? "unknown")}${r.serverVersion ? ` v${markdownText(r.serverVersion)}` : ""}`,
   );
-  lines.push(`- **Transport:** ${r.transport}`);
+  lines.push(`- **Transport:** ${markdownText(r.transport)}`);
   lines.push(`- **Tools:** ${r.toolCount}`);
   lines.push(`- **Scanned:** ${r.scannedAt}`);
   lines.push("");
@@ -128,9 +139,9 @@ export function renderMarkdown(r: ScanReport): string {
     lines.push(`| Severity | Check | Tool | Finding |`);
     lines.push(`|---|---|---|---|`);
     for (const f of r.findings) {
-      const detail = f.detail.replace(/\|/g, "\\|");
+      const detail = markdownText(f.detail);
       lines.push(
-        `| ${f.severity.toUpperCase()} | ${f.checkId} | ${f.tool ?? "—"} | ${detail} |`,
+        `| ${f.severity.toUpperCase()} | ${markdownText(f.checkId)} | ${markdownText(f.tool ?? "—")} | ${detail} |`,
       );
     }
     lines.push("");

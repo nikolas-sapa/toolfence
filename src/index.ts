@@ -10,6 +10,7 @@ import {
   renderJsonSafe,
   renderMarkdown,
   renderTerminal,
+  terminalText,
   worstSeverity,
 } from "./report.js";
 import type { Finding, ScanContext } from "./types.js";
@@ -17,6 +18,7 @@ import type { Finding, ScanContext } from "./types.js";
 interface Args {
   target?: string;
   stdio: boolean;
+  stdioArgs?: string[];
   bearer?: string;
   format: "terminal" | "json" | "markdown";
   out?: string;
@@ -43,7 +45,11 @@ function parseArgs(argv: string[]): Args {
         break;
       case "--stdio":
         a.stdio = true;
-        break;
+        a.stdioArgs = argv.slice(i + 1);
+        // Preserve the original token boundaries for transport startup and
+        // include all arguments in the baseline/report identity.
+        a.target = a.stdioArgs.map((part) => JSON.stringify(part)).join(" ");
+        return a;
       case "--bearer":
         a.bearer = argv[++i];
         break;
@@ -68,8 +74,7 @@ function parseArgs(argv: string[]): Args {
         rest.push(arg);
     }
   }
-  // With --stdio, everything non-flag is the command + its args.
-  a.target = a.stdio ? rest.join(" ") : rest[0];
+  a.target = rest[0];
   return a;
 }
 
@@ -89,6 +94,9 @@ OPTIONS
   --no-baseline      Don't read/write the drift-detection baseline
   --no-color         Disable ANSI colors
   -h, --help         Show this help
+
+Place scanner options before --stdio. Every argument after --stdio is passed
+unchanged to the server, including --help and other option-looking arguments.
 
 EXIT CODES
   0  no high/critical findings
@@ -111,11 +119,12 @@ async function main(): Promise<number> {
   try {
     result = await connect(args.target, {
       stdio: args.stdio,
+      stdioArgs: args.stdioArgs,
       bearer: args.bearer,
     });
   } catch (err) {
     process.stderr.write(
-      `toolfence: failed to connect to "${args.target}": ${(err as Error).message}\n`,
+      `toolfence: failed to connect to "${terminalText(args.target)}": ${terminalText(String((err as Error).message))}\n`,
     );
     return 2;
   }
@@ -132,10 +141,12 @@ async function main(): Promise<number> {
     };
 
     const findings: Finding[] = [];
+    let checkFailed = false;
     for (const check of CHECKS) {
       try {
         findings.push(...(await check.run(ctx)));
       } catch (err) {
+        checkFailed = true;
         findings.push({
           checkId: check.id,
           severity: "info",
@@ -145,7 +156,7 @@ async function main(): Promise<number> {
       }
     }
 
-    if (args.baseline) {
+    if (args.baseline && !checkFailed) {
       await saveBaseline(args.target, result.tools);
     }
 
@@ -167,12 +178,13 @@ async function main(): Promise<number> {
 
     if (args.out) {
       await writeFile(args.out, rendered);
-      process.stdout.write(`toolfence: report written to ${args.out}\n`);
+      process.stdout.write(`toolfence: report written to ${terminalText(args.out)}\n`);
     } else {
       process.stdout.write(rendered + "\n");
     }
 
     const worst = worstSeverity(report);
+    if (checkFailed) return 2;
     return worst === "critical" || worst === "high" ? 1 : 0;
   } finally {
     await result.close().catch(() => {});
@@ -182,6 +194,6 @@ async function main(): Promise<number> {
 main()
   .then((code) => process.exit(code))
   .catch((err) => {
-    process.stderr.write(`toolfence: fatal: ${err?.stack ?? err}\n`);
+    process.stderr.write(`toolfence: fatal: ${terminalText(String(err?.stack ?? err))}\n`);
     process.exit(2);
   });
