@@ -3,7 +3,7 @@
 [![npm version](https://img.shields.io/npm/v/toolfence.svg?style=flat-square&color=0B0B0D&labelColor=0B0B0D)](https://www.npmjs.com/package/toolfence)
 [![CI](https://github.com/nikolas-sapa/toolfence/actions/workflows/ci.yml/badge.svg)](https://github.com/nikolas-sapa/toolfence/actions/workflows/ci.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-0B0B0D?style=flat-square&labelColor=0B0B0D)](./LICENSE)
-[![Node](https://img.shields.io/badge/node-%3E%3D20-0B0B0D?style=flat-square&labelColor=0B0B0D)](./package.json)
+[![Node](https://img.shields.io/badge/node-%3E%3D20.3-0B0B0D?style=flat-square&labelColor=0B0B0D)](./package.json)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-0B0B0D?style=flat-square&labelColor=0B0B0D)](./CONTRIBUTING.md)
 
 **Security scanner for MCP servers.** Point it at any [Model Context Protocol](https://modelcontextprotocol.io) server and get a severity-ranked report of the risks your agents inherit by connecting to it.
@@ -22,7 +22,7 @@ npx toolfence https://your-server.example.com/mcp
         Tool "fetch_doc" contains language matching: instruction override.
         Tool descriptions are fed verbatim into the agent's context — this is
         a tool-poisoning vector.
-  HIGH  No authentication required
+  HIGH  No credentials required for tool discovery
   HIGH  Tool definition changed since baseline  [search]
   MED   Large tool catalog
   ...
@@ -35,7 +35,7 @@ Exit code is non-zero when high/critical findings exist, so it drops straight in
 
 ## Why
 
-OAuth authenticated your agents. It didn't make them **safe**. The MCP spec settled authentication (OAuth 2.1 for HTTP transports) — but that's roughly 20% of the threat surface. The other 80% lives in what the tools *do* and what their definitions *say*:
+Authentication alone does not establish tool safety. Tool definitions can expose additional risks:
 
 - **Tool poisoning** — a malicious server ships a tool description that instructs the agent to read your secrets or ignore prior instructions. The agent reads it and complies.
 - **Indirect prompt injection** — adversarial text smuggled into tool definitions or schemas.
@@ -71,11 +71,18 @@ toolfence https://example.com/mcp --bearer "$TOKEN"
 
 # Local stdio server (everything after --stdio is the command)
 toolfence --stdio npx -y @modelcontextprotocol/server-everything
+toolfence --json --no-baseline --stdio node server.js "argument with spaces"
 
 # Machine-readable output for CI / dashboards
 toolfence https://example.com/mcp --json
 toolfence https://example.com/mcp --markdown -o report.md
 ```
+
+Requires Node 20.3 or newer for [combined abort signals](https://nodejs.org/download/release/v20.20.1/docs/api/globals.html#static-method-abortsignalanysignals).
+Place scanner options before `--stdio`. Every subsequent argument goes unchanged
+to the child server, including `--help`. Connection, handshake and catalog paging
+share a 30-second deadline; the initial HTTP header probe is capped at 5 seconds.
+Stdio commands run with your user permissions; the scanner does not sandbox them.
 
 ### Options
 
@@ -95,7 +102,7 @@ toolfence https://example.com/mcp --markdown -o report.md
 |------|---------|
 | `0` | No high/critical findings |
 | `1` | At least one high or critical finding |
-| `2` | Scan could not run (connection / usage error) |
+| `2` | Scan incomplete (connection, usage, baseline or check error) |
 
 ## What it checks (12)
 
@@ -107,7 +114,7 @@ toolfence https://example.com/mcp --markdown -o report.md
 | **Known-bad signatures** | Documented MCP abuse patterns (secret-file reads, rug-pulls, cross-tool shadowing, exfiltration-to-external, obfuscated payloads) |
 | **Tool integrity / drift** | Tool definitions that changed since the last scan |
 | **Context cost** | Tool catalogs large enough to inflate every agent turn |
-| **Rate-limit posture** | No server-side ceiling on call volume |
+| **Rate-limit posture** | Missing rate-limit headers on the initial HTTP probe |
 | **Naming hygiene** | Duplicate or collision-prone generic tool names |
 | **Sensitive capability** | Tools that reach the filesystem, execute code, or touch the network |
 | **Schema strength** | Missing, untyped, or unsealed input schemas |
@@ -116,13 +123,29 @@ toolfence https://example.com/mcp --markdown -o report.md
 
 The [known-bad signature set](./src/signatures.ts) is community-extensible — see [CONTRIBUTING](./CONTRIBUTING.md).
 
+Checks inspect server metadata and tool definitions; they do not invoke tools.
+Anonymous catalog discovery does not prove anonymous tool execution. Missing
+rate-limit headers do not prove absent enforcement. Findings are heuristics,
+not a guarantee that a server is safe or unsafe.
+
 ### Drift detection
 
-The first scan of a target records a fingerprint of every tool definition under
-`~/.toolfence/baselines/`. Subsequent scans of the same target compare against it
-and flag any tool whose definition changed, appeared, or disappeared — the core
-signal for catching a server that turns malicious *after* you trusted it. Run it
-in CI to fail the build on unexpected drift.
+Each completed scan records tool fingerprints under `~/.toolfence/baselines/`.
+The next scan compares names, descriptions, input schemas and safety annotations
+against that latest observation. Changes, additions and removals produce findings.
+Completed scans replace the baseline even when high/critical findings exist;
+this is not an immutable record of approved tools. Incomplete discovery or failed
+checks exit 2 without replacing it. Malformed or unreadable baselines fail the scan.
+
+Writes use a private temporary file and atomic replacement. Reports and baselines
+retain the target URL or command arguments: avoid embedding credentials in them.
+`--bearer` avoids storing the token in the target, but command-line arguments may
+still be visible to local process inspection. Use `--no-baseline` to skip caching.
+
+Upgrading from earlier versions can flag one-time drift for annotated tools.
+Stdio targets now use JSON-quoted argument tokens as their cache identity, so
+their first scan establishes a new baseline. Annotation-free HTTP fingerprints
+retain their previous format.
 
 ## Roadmap
 
