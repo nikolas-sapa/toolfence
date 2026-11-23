@@ -5,6 +5,7 @@ import { mkdtemp, readFile, readdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { serve } from "./fixtures/http-server.mjs";
 
 const cli = fileURLToPath(new URL("../dist/index.js", import.meta.url));
 const fixture = fileURLToPath(new URL("./fixtures/stdio-server.mjs", import.meta.url));
@@ -48,4 +49,31 @@ test("CLI escapes remote control characters in discovery errors", async () => {
   assert.equal(result.code, 2);
   assert.equal(result.stderr.includes("\u001b"), false);
   assert.ok(result.stderr.includes("\\u001b[2J"));
+});
+
+// The stdio fixture's worst finding is low, with info findings present.
+test("CLI --fail-on tunes the exit-1 threshold on a low-severity report", async () => {
+  const stdio = ["--stdio", process.execPath, fixture, "ok", "-"];
+  assert.equal((await run([cli, "--no-baseline", ...stdio])).code, 0);
+  assert.equal((await run([cli, "--no-baseline", "--fail-on", "medium", ...stdio])).code, 0);
+  assert.equal((await run([cli, "--no-baseline", "--fail-on", "low", ...stdio])).code, 1);
+  assert.equal((await run([cli, "--no-baseline", "--fail-on", "info", ...stdio])).code, 1);
+});
+
+test("CLI --fail-on keeps exit 1 opt-in for high findings and off disables it", async () => {
+  const server = await serve({ mode: "empty" });
+  try {
+    assert.equal((await run([cli, "--no-baseline", server.url])).code, 1);
+    assert.equal((await run([cli, "--no-baseline", "--fail-on", "critical", server.url])).code, 0);
+    assert.equal((await run([cli, "--no-baseline", "--fail-on", "off", server.url])).code, 0);
+    assert.equal((await run([cli, "--no-baseline", "--fail-on", "high", server.url])).code, 1);
+  } finally { await server.close(); }
+});
+
+test("CLI --fail-on rejects invalid values before connecting", async () => {
+  for (const args of [["--fail-on", "bogus"], ["--fail-on"]]) {
+    const result = await run([cli, ...args, "http://127.0.0.1:1/mcp"]);
+    assert.equal(result.code, 2);
+    assert.ok(result.stderr.includes("invalid --fail-on"), result.stderr);
+  }
 });
