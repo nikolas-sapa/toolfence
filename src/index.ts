@@ -13,7 +13,8 @@ import {
   terminalText,
   worstSeverity,
 } from "./report.js";
-import type { Finding, ScanContext } from "./types.js";
+import { SEVERITY_ORDER } from "./types.js";
+import type { Finding, ScanContext, Severity } from "./types.js";
 
 interface Args {
   target?: string;
@@ -25,7 +26,11 @@ interface Args {
   baseline: boolean;
   color: boolean;
   help: boolean;
+  failOn: Severity | "off";
+  argError?: string;
 }
+
+const FAIL_ON_VALUES = [...SEVERITY_ORDER, "off"] as const;
 
 function parseArgs(argv: string[]): Args {
   const a: Args = {
@@ -34,6 +39,7 @@ function parseArgs(argv: string[]): Args {
     baseline: true,
     color: process.stdout.isTTY ?? false,
     help: false,
+    failOn: "high",
   };
   const rest: string[] = [];
   for (let i = 0; i < argv.length; i++) {
@@ -70,6 +76,15 @@ function parseArgs(argv: string[]): Args {
       case "--no-color":
         a.color = false;
         break;
+      case "--fail-on": {
+        const value = argv[++i];
+        if ((FAIL_ON_VALUES as readonly string[]).includes(value)) {
+          a.failOn = value as Args["failOn"];
+        } else {
+          a.argError = `invalid --fail-on value "${value ?? "(missing)"}" (expected ${FAIL_ON_VALUES.join("|")})`;
+        }
+        break;
+      }
       default:
         rest.push(arg);
     }
@@ -93,14 +108,16 @@ OPTIONS
   -o, --out <file>   Write the report to a file
   --no-baseline      Don't read/write the drift-detection baseline
   --no-color         Disable ANSI colors
+  --fail-on <sev>    Exit 1 when the worst finding reaches this severity
+                     (critical|high|medium|low|info, or off; default: high)
   -h, --help         Show this help
 
 Place scanner options before --stdio. Every argument after --stdio is passed
 unchanged to the server, including --help and other option-looking arguments.
 
 EXIT CODES
-  0  no high/critical findings
-  1  at least one high or critical finding
+  0  no finding at or above the --fail-on severity
+  1  a finding at or above the --fail-on severity (default: high)
   2  scan could not run (connection/usage error)
 `;
 
@@ -109,6 +126,10 @@ async function main(): Promise<number> {
   if (args.help) {
     process.stdout.write(HELP);
     return 0;
+  }
+  if (args.argError) {
+    process.stderr.write(`toolfence: ${args.argError}\n`);
+    return 2;
   }
   if (!args.target) {
     process.stdout.write(HELP);
@@ -183,9 +204,17 @@ async function main(): Promise<number> {
       process.stdout.write(rendered + "\n");
     }
 
-    const worst = worstSeverity(report);
+    const worst = worstSeverity(report) ??
+      (report.counts.info > 0 ? "info" : null);
     if (checkFailed) return 2;
-    return worst === "critical" || worst === "high" ? 1 : 0;
+    if (
+      args.failOn !== "off" &&
+      worst !== null &&
+      SEVERITY_ORDER.indexOf(worst) <= SEVERITY_ORDER.indexOf(args.failOn)
+    ) {
+      return 1;
+    }
+    return 0;
   } finally {
     await result.close().catch(() => {});
   }

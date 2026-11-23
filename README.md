@@ -76,6 +76,9 @@ toolfence --json --no-baseline --stdio node server.js "argument with spaces"
 # Machine-readable output for CI / dashboards
 toolfence https://example.com/mcp --json
 toolfence https://example.com/mcp --markdown -o report.md
+
+# Tune the exit-1 severity threshold (default: high)
+toolfence https://example.com/mcp --fail-on medium
 ```
 
 Requires Node 20.3 or newer for [combined abort signals](https://nodejs.org/download/release/v20.20.1/docs/api/globals.html#static-method-abortsignalanysignals).
@@ -94,14 +97,15 @@ Stdio commands run with your user permissions; the scanner does not sandbox them
 | `-o, --out <file>` | Write the report to a file |
 | `--no-baseline` | Don't read/write the drift-detection baseline |
 | `--no-color` | Disable ANSI colors |
+| `--fail-on <sev>` | Severity that triggers exit code 1: `critical`, `high`, `medium`, `low`, `info` — or `off` to always pass findings (default `high`) |
 | `-h, --help` | Show help |
 
 ### Exit codes
 
 | Code | Meaning |
 |------|---------|
-| `0` | No high/critical findings |
-| `1` | At least one high or critical finding |
+| `0` | No finding at or above the `--fail-on` severity |
+| `1` | At least one finding at or above the `--fail-on` severity (default `high`) |
 | `2` | Scan incomplete (connection, usage, baseline or check error) |
 
 ## What it checks (12)
